@@ -3,9 +3,10 @@
     public class Instrutor:Pessoa
     {
         public int InstrutorId { get; set; }
-        public string FormacaoAcademica { get; set; }
+        public string FormacaoAcademia {  get; set; }
         public string Especialidade { get; set; }
-        public decimal Salario { get; set; }
-        public string StatusInstrutor { get; set; }
+        public decimal ValorHoraAula {  get; set; }
+        public int StatusInstrutor { get; set; }
+
     }
 }
