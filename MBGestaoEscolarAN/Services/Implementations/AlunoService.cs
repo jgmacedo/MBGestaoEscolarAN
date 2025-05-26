@@ -12,5 +12,30 @@ namespace MBGestaoEscolarAN.Services.Implementations
         {
             _context = context;
         }
+
+        public Task<int> AdicionarAsync(Aluno aluno)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<bool> AlterarAsync(Aluno aluno)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<bool> ExcluirAsync(int id)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<Aluno> ListarPorIdAsync(int id)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<IEnumerable<Aluno>> ListarTodosAsync()
+        {
+            
+        }
     }
 }

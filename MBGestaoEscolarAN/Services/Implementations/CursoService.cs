@@ -1,8 +1,9 @@
 ﻿using MBGestaoEscolarAN.Data;
+using MBGestaoEscolarAN.Services.Interfaces;
 
 namespace MBGestaoEscolarAN.Services.Implementations
 {
-    public class CursoService
+    public class CursoService:ICursoService
     {
         private readonly SQLServerDbContext _context;
 
