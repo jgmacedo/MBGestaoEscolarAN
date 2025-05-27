@@ -1,6 +1,7 @@
 ﻿using MBGestaoEscolarAN.Data;
 using MBGestaoEscolarAN.Entities;
 using MBGestaoEscolarAN.Services.Interfaces;
+using Microsoft.EntityFrameworkCore;
 
 namespace MBGestaoEscolarAN.Services.Implementations
 {
@@ -13,29 +14,48 @@ namespace MBGestaoEscolarAN.Services.Implementations
             _context = context;
         }
 
-        public Task<int> AdicionarAsync(Turma turma)
+        public async Task<int> AdicionarAsync(Turma turma)
         {
-            throw new NotImplementedException();
+            _context.Turmas.Add(turma);
+            await _context.SaveChangesAsync();
+            return turma.TurmaId;
         }
 
-        public Task<bool> AlterarAsync(Turma turma)
+        public async Task<bool> AlterarAsync(Turma turma)
         {
-            throw new NotImplementedException();
+            var turmaExiste = await _context.Turmas.FindAsync(turma.TurmaId);
+            if (turmaExiste == null)
+            {
+                return false;
+            }
+            _context.Entry(turmaExiste).CurrentValues.SetValues(turma);
+            return await _context.SaveChangesAsync() > 0;
         }
 
-        public Task<bool> ExcluirAsync(int id)
+        public async Task<bool> ExcluirAsync(int id)
         {
-            throw new NotImplementedException();
+            var turma = await _context.Turmas.FindAsync(id);
+            if (turma == null)
+            {
+                return false;
+            }
+            _context.Turmas.Remove(turma);
+            return await _context.SaveChangesAsync() > 0;
         }
 
-        public Task<Turma> ListarPorIdAsync(int id)
+        public async Task<Turma?> ListarPorIdAsync(int id)
         {
-            throw new NotImplementedException();
+            return await _context.Turmas
+                                .AsNoTracking()
+                                .FirstOrDefaultAsync(x => x.TurmaId == id);
         }
 
-        public Task<IEnumerable<Turma>> ListarTodosAsync()
+        public async Task<IEnumerable<Turma>> ListarTodosAsync()
         {
-            throw new NotImplementedException();
+            return await _context.Turmas
+                                .AsNoTracking()
+                                .OrderBy(x => x.Nome)
+                                .ToListAsync();
         }
     }
 }

@@ -1,6 +1,7 @@
 ﻿using MBGestaoEscolarAN.Data;
 using MBGestaoEscolarAN.Entities;
 using MBGestaoEscolarAN.Repository.Interfaces;
+using Microsoft.EntityFrameworkCore;
 
 namespace MBGestaoEscolarAN.Services.Implementations
 {
@@ -30,7 +31,7 @@ namespace MBGestaoEscolarAN.Services.Implementations
 
         public async Task<bool> AlterarAsync(Coordenador coordenador)
         {
-            var coordenadorExiste = await _context.Coordenadores.FindAsync(coordenador.Cpf);
+            var coordenadorExiste = await _context.Coordenadores.FindAsync(coordenador.CoordenadorId);
             if (coordenadorExiste == null)
             {
                 return false;
@@ -50,14 +51,19 @@ namespace MBGestaoEscolarAN.Services.Implementations
             return await _context.SaveChangesAsync() > 0;
         }
 
-        public Task<Coordenador> ListarPorIdAsync(int id)
+        public async Task<Coordenador?> ListarPorIdAsync(int id)
         {
-            throw new NotImplementedException();
+            return await _context.Coordenadores
+                                 .AsNoTracking()
+                                 .FirstOrDefaultAsync(x => x.CoordenadorId == id);
         }
 
-        public Task<IEnumerable<Coordenador>> ListarTodosAsync()
+        public async Task<IEnumerable<Coordenador>> ListarTodosAsync()
         {
-            throw new NotImplementedException();
+            return await _context.Coordenadores
+                                 .AsNoTracking()
+                                 .OrderBy(x => x.Nome)
+                                 .ToListAsync();
         }
     }
 }
