@@ -1,7 +1,29 @@
 using MBGestaoEscolarAN.Components;
+using MBGestaoEscolarAN.Data;
+using MBGestaoEscolarAN.Repository.Interfaces;
+using MBGestaoEscolarAN.Services.Implementations;
 using MudBlazor.Services;
 
 var builder = WebApplication.CreateBuilder(args);
+
+//String de Conexão do SQL Server
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+
+// Registrar o DbContext com SQL Server
+builder.Services.AddDbContext<SQLServerDbContext>(options =>
+{
+    options.UseSqlServer(connectionString);
+
+    if (builder.Environment.IsDevelopment())
+    {
+        options.EnableSensitiveDataLogging();
+        options.LogTo(Console.WriteLine);
+    }
+});
+
+// Registrar Services de Uso
+builder.Services.AddScoped<IAlunoService, AlunoService>();
+builder.Services.AddScoped<ICoordenadorService, CoordenadorService>();
 
 // Add MudBlazor services
 builder.Services.AddMudServices();

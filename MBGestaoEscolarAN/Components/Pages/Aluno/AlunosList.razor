@@ -1,0 +1,102 @@
+﻿@page "/alunos"  
+@using MudBlazor  
+@using MBGestaoEscolarAN.Entities  
+@using MBGestaoEscolarAN.Services.Interfaces  
+@using MBGestaoEscolarAN.Services.Implementations
+
+@inject AlunoService AlunoService
+@inject IDialogService DialogService  
+@inject ISnackbar Snackbar
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+@code {
+	private List<Aluno> _alunos = new();
+	private bool _dialogOpen;
+	private readonly DialogOptions _dialogOptions = new DialogOptions
+	 {
+		 CloseButton = true,
+		 MaxWidth = MaxWidth.Medium,
+		 FullWidth = true
+	 };
+	protected override async Task OnInitializedAsync()
+	{
+		try
+		{
+			_alunos = (await AlunoService.ListarTodosAsync()).ToList();
+		}
+		catch (Exception ex)
+		{
+			Snackbar.Add($"Erro ao carregar os alunos: {ex.Message}", Severity.Error);
+		}
+	}
+    private async Task ShowDialog(string idAluno)
+    {
+        _dialogOpen = true;
+        var parameters = new DialogParameters();
+        if (!string.IsNullOrEmpty(idAluno))
+        {
+            var aluno = _alunos.FirstOrDefault(x => x.AlunoId.ToString() == idAluno);
+            parameters.Add("Aluno", aluno);
+            parameters.Add("Title", "Editar Aluno");
+        }
+        else
+        {
+            parameters.Add("Aluno", new Aluno());
+            parameters.Add("Title", "Novo Aluno");
+        }
+
+        // var dialog = DialogService.Show<AlunoForm>(
+        //   parameters["Title"]!.ToString(),
+        //   parameters,
+        //   _dialogOptions
+        // );
+        var dialog = await DialogService.ShowAsync<AlunoDialog>(
+                parameters["Title"]!.ToString(),
+                parameters,
+                _dialogOptions
+              );
+
+        var result = await dialog.Result;
+
+        _dialogOpen = false;
+        if (!result.Canceled) 
+        {
+            // recarregar lista
+            _alunos = (await AlunoService.ListarTodosAsync()).ToList();
+            StateHasChanged();
+        }
+    }
+
+    private async Task ConfirmaExclusaoAluno(Aluno aluno)
+    {
+        var confirmed = await DialogService.ShowMessageBox(
+          "Confirmação de Exclusão",
+          $"Deseja realmente excluir o aluno {aluno.Nome} (Matrícula: {aluno.Matricula})?",
+          yesText: "Sim",
+          cancelText: "Não"
+        );
+
+        if (confirmed == true)
+        {
+            await AlunoService.ExcluirAsync(aluno.AlunoId);
+            _alunos = (await AlunoService.ListarTodosAsync()).ToList();
+            Snackbar.Add($"Aluno '{aluno.Nome}' removido com sucesso.", Severity.Success);
+            StateHasChanged();
+        }
+    }
+
+
+}
