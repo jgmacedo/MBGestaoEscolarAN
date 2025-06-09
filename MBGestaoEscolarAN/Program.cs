@@ -3,6 +3,7 @@ using MBGestaoEscolarAN.Data;
 using MBGestaoEscolarAN.Repository.Interfaces;
 using MBGestaoEscolarAN.Services.Implementations;
 using MudBlazor.Services;
+using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 
