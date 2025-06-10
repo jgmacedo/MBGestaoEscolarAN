@@ -4,7 +4,7 @@
 @using MBGestaoEscolarAN.Services.Interfaces
 @using MBGestaoEscolarAN.Services.Implementations
 
-@inject AlunoService AlunoService
+@inject MBGestaoEscolarAN.Repository.Interfaces.IAlunoService AlunoService
 @inject IDialogService DialogService
 @inject ISnackbar Snackbar
 
@@ -55,9 +55,6 @@
 
 	</MudCardContent>
 </MudCard>
-
-
-
 
 
 
@@ -136,6 +133,4 @@
 			StateHasChanged();
 		}
 	}
-
-
 }

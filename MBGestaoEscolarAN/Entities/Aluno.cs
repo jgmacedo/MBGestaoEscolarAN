@@ -30,8 +30,7 @@ namespace MBGestaoEscolarAN.Entities
         public string StatusAluno { get; set; }
         [Column(TypeName = "date")]
         public DateTime? DataCadastro { get; set; }
-        [Column(TypeName = "string")]
-        public string CPF { get; set; }
+        
 
         public ICollection<Inscricao> Inscricoes { get; set; } = new List<Inscricao>();
 

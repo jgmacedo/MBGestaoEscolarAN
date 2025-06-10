@@ -16,7 +16,7 @@ namespace MBGestaoEscolarAN.Services.Implementations
 
         public async Task<int> AdicionarAsync(Instrutor instrutor)
         {
-            var instrutorExiste = await _context.Instrutores.FindAsync(instrutor.Cpf);
+            var instrutorExiste = await _context.Instrutores.FindAsync(instrutor.CPF);
             if (instrutorExiste == null)
             {
                 _context.Instrutores.Add(instrutor);

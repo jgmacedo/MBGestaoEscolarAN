@@ -16,7 +16,7 @@ namespace MBGestaoEscolarAN.Services.Implementations
 
         public async Task<int> AdicionarAsync(Coordenador coordenador)
         {
-            var coordenadorExiste = await _context.Coordenadores.FindAsync(coordenador.Cpf);
+            var coordenadorExiste = await _context.Coordenadores.FindAsync(coordenador.CPF);
             if (coordenadorExiste == null)
             {
                 _context.Coordenadores.Add(coordenador);
