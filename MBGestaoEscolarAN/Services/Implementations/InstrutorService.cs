@@ -5,7 +5,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace MBGestaoEscolarAN.Services.Implementations
 {
-    public class InstrutorService :IInstrutorService
+    public class InstrutorService : IInstrutorService
     {
         private readonly SQLServerDbContext _context;
 
