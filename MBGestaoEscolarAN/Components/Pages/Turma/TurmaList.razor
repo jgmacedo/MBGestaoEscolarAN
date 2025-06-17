@@ -1,0 +1,138 @@
+﻿@page "/turma"
+@using MudBlazor
+@using MBGestaoEscolarAN.Entities
+@using MBGestaoEscolarAN.Services.Interfaces
+@using MBGestaoEscolarAN.Services.Implementations
+
+@inject MBGestaoEscolarAN.Services.Interfaces.ITurmaService TurmaService
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+
+<MudCard>
+    <MudCardContent>
+        <MudText Typo="Typo.h6" Class="mb-4">Turmas Cadastradas</MudText>
+        <MudPaper Class="d-flex justify-end flex-grow-1 mb-6" Elevation="0">
+            <MudButton Color="Color.Primary"
+                       Variant="Variant.Filled"
+                       StartIcon="@Icons.Material.Filled.Add"
+                       Disabled="@(_dialogOpen)"
+                       OnClick="() => ShowDialog(string.Empty)">
+                Adicionar Turma
+            </MudButton>
+        </MudPaper>
+        <MudDataGrid Items="@_turmas" SortMode="SortMode.Multiple" Hover="true">
+            <Columns>
+                <PropertyColumn Property="x => x.TurmaId" Title="ID" />
+                <PropertyColumn Property="x => x.Codigo" Title="Código" />
+                <PropertyColumn Property="x => x.Nome" Title="Nome da Turma" />
+                <PropertyColumn Property="x => x.CursoId" Title="Curso ID" />
+                <PropertyColumn Property="x => x.DataInicio"
+                                Title="Data Início"
+                                Format="dd/MM/yyyy" />
+                <PropertyColumn Property="x => x.DataFim"
+                                Title="Data Fim"
+                                Format="dd/MM/yyyy" />
+                <PropertyColumn Property="x => x.Local" Title="Local" />
+                <PropertyColumn Property="x => x.Modalidade" Title="Modalidade" />
+                <PropertyColumn Property="x => x.NumeroVagas" Title="Vagas" />
+                <PropertyColumn Property="x => x.StatusTurma" Title="Status" />
+                <TemplateColumn StickyRight="true" Title="Ações">
+                    <CellTemplate>
+                        <MudIconButton Color="Color.Primary"
+                                       Icon="@Icons.Material.Filled.Edit"
+                                       Size="Size.Small"
+                                       OnClick="() => ShowDialog(context.Item.TurmaId.ToString())" />
+                        <MudIconButton Color="Color.Secondary"
+                                       Icon="@Icons.Material.Filled.Delete"
+                                       Size="Size.Small"
+                                       OnClick="() => ConfirmaExclusaoTurma(context.Item)" />
+                    </CellTemplate>
+                </TemplateColumn>
+            </Columns>
+            <PagerContent>
+                <MudDataGridPager T="Turma" />
+            </PagerContent>
+        </MudDataGrid>
+    </MudCardContent>
+</MudCard>
+
+@code {
+    private List<Turma> _turmas = new();
+    private bool _dialogOpen;
+    private readonly DialogOptions _dialogOptions = new DialogOptions
+        {
+            CloseButton = true,
+            MaxWidth = MaxWidth.Medium,
+            FullWidth = true
+        };
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            _turmas = (await TurmaService.ListarTodosAsync()).ToList();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Erro ao carregar as turmas: {ex.Message}", Severity.Error);
+        }
+    }
+
+    private async Task ShowDialog(string idTurma)
+    {
+        _dialogOpen = true;
+        var parameters = new DialogParameters();
+        if (!string.IsNullOrEmpty(idTurma))
+        {
+            var turma = _turmas.FirstOrDefault(x => x.TurmaId.ToString() == idTurma);
+            parameters.Add("Turma", turma);
+            parameters.Add("Title", "Editar Turma");
+        }
+        else
+        {
+            parameters.Add("Turma", new Turma());
+            parameters.Add("Title", "Nova Turma");
+        }
+
+        var dialog = await DialogService.ShowAsync<TurmaDialog>(
+            parameters["Title"]!.ToString(),
+            parameters,
+            _dialogOptions
+        );
+
+        var result = await dialog.Result;
+
+        _dialogOpen = false;
+        if (!result.Canceled)
+        {
+            // recarregar lista
+            _turmas = (await TurmaService.ListarTodosAsync()).ToList();
+            StateHasChanged();
+        }
+    }
+
+    private async Task ConfirmaExclusaoTurma(Turma turma)
+    {
+        var confirmed = await DialogService.ShowMessageBox(
+            "Confirmação de Exclusão",
+            $"Deseja realmente excluir a turma {turma.Nome} (Código: {turma.Codigo})?",
+            yesText: "Sim",
+            cancelText: "Não"
+        );
+
+        if (confirmed == true)
+        {
+            var sucesso = await TurmaService.ExcluirAsync(turma.TurmaId);
+            if (sucesso)
+            {
+                _turmas = (await TurmaService.ListarTodosAsync()).ToList();
+                Snackbar.Add($"Turma '{turma.Nome}' removida com sucesso.", Severity.Success);
+                StateHasChanged();
+            }
+            else
+            {
+                Snackbar.Add($"Erro ao excluir a turma '{turma.Nome}'.", Severity.Error);
+            }
+        }
+    }
+}

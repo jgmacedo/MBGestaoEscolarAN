@@ -16,5 +16,6 @@ namespace MBGestaoEscolarAN.Data
         public DbSet<Instrutor> Instrutores { get; set; }
         public DbSet<Coordenador> Coordenadores { get; set; }
         public DbSet<Turma> Turmas { get; set; }
+
     }
 }

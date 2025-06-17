@@ -1,0 +1,196 @@
+﻿@using MBGestaoEscolarAN.Entities
+@using MBGestaoEscolarAN.Services.Interfaces
+@using MBGestaoEscolarAN.ViewModels
+@using MudBlazor
+
+@inject IInstrutorService InstrutorService
+@inject IDialogService Dialog
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <TitleContent>
+        <MudText Typo="Typo.h6" Class="tituloFormulario">
+            <MudIcon Icon="@Icons.Material.Filled.Person" Class="mr-3" /> @viewModel.TituloFormulario
+        </MudText>
+    </TitleContent>
+    <DialogContent>
+        <MudContainer Style="max-height: 70vh; overflow-y: auto;">
+            <EditForm Model="@viewModel" OnValidSubmit="OnValidSubmit">
+                <DataAnnotationsValidator />
+                <MudGrid>
+                    <MudItem xs="12" sm="6">
+                        <MudTextField Label="Nome Completo"
+                                      @bind-Value="viewModel.Nome"
+                                      For="@(() => viewModel.Nome)"
+                                      Required="true"
+                                      Immediate="true" />
+                    </MudItem>
+                    <MudItem xs="12" sm="6">
+                        <MudTextField Label="CPF"
+                                      @bind-Value="viewModel.CPF"
+                                      For="@(() => viewModel.CPF)"
+                                      Required="true"
+                                      Immediate="true" />
+                    </MudItem>
+                    <MudItem xs="12" sm="6">
+                        <MudTextField Label="Email"
+                                      @bind-Value="viewModel.Email"
+                                      For="@(() => viewModel.Email)"
+                                      InputType="InputType.Email"
+                                      Required="true"
+                                      Immediate="true" />
+                    </MudItem>
+                    <MudItem xs="12" sm="6">
+                        <MudTextField Label="Telefone"
+                                      @bind-Value="viewModel.Telefone"
+                                      For="@(() => viewModel.Telefone)"
+                                      Immediate="true" />
+                    </MudItem>
+                    <MudItem xs="12" sm="6">
+                        <MudTextField Label="Formação Acadêmica"
+                                      @bind-Value="viewModel.FormacaoAcademica"
+                                      For="@(() => viewModel.FormacaoAcademica)"
+                                      Immediate="true" />
+                    </MudItem>
+                    <MudItem xs="12" sm="6">
+                        <MudTextField Label="Especialidade"
+                                      @bind-Value="viewModel.Especialidade"
+                                      For="@(() => viewModel.Especialidade)"
+                                      Immediate="true" />
+                    </MudItem>
+                    <MudItem xs="12" sm="6">
+                        <MudNumericField T="decimal"
+                                         Label="Valor Hora/Aula"
+                                         @bind-Value="viewModel.ValorHoraAula"
+                                         For="@(() => viewModel.ValorHoraAula)"
+                                         Required="true"
+                                         Immediate="true"
+                                         Adornment="Adornment.End"
+                                         AdornmentText="R$" />
+                    </MudItem>
+                    <MudItem xs="12" sm="6">
+                        <MudSelect T="string"
+                                   Label="Status do Instrutor"
+                                   @bind-Value="viewModel.StatusInstrutor"
+                                   For="@(() => viewModel.StatusInstrutor)"
+                                   Required="true">
+                            <MudSelectItem Value=@("Ativo")>Ativo</MudSelectItem>
+                            <MudSelectItem Value=@("Inativo")>Inativo</MudSelectItem>
+                            <MudSelectItem Value=@("Afastado")>Afastado</MudSelectItem>
+                        </MudSelect>
+                    </MudItem>
+                </MudGrid>
+                <ValidationSummary />
+            </EditForm>
+        </MudContainer>
+    </DialogContent>
+    <DialogActions>
+        <MudButton OnClick="Cancel">Cancelar</MudButton>
+        <MudButton Color="Color.Primary"
+                   Variant="Variant.Filled"
+                   Disabled="@salvando"
+                   OnClick="SalvarInstrutor">
+            @if (salvando)
+            {
+                <MudProgressCircular Color="Color.Secondary" Size="Size.Small" Indeterminate="true" />
+                <MudText Class="ml-2">Salvando...</MudText>
+            }
+            else
+            {
+                <MudText>@viewModel.TextoBotao</MudText>
+            }
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; }
+    [Parameter] public Instrutor instrutor { get; set; } = new();
+    [Parameter] public string Title { get; set; } = "";
+    private InstrutorViewModel viewModel = new();
+    private bool salvando = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        if (instrutor != null && instrutor.InstrutorId > 0)
+        {
+            // Modo de alteração
+            viewModel = new InstrutorViewModel
+                {
+                    InstrutorId = instrutor.InstrutorId,
+                    Nome = instrutor.Nome,
+                    CPF = instrutor.CPF,
+                    Email = instrutor.Email,
+                    Telefone = instrutor.Telefone,
+                    FormacaoAcademica = instrutor.FormacaoAcademica,
+                    Especialidade = instrutor.Especialidade,
+                    ValorHoraAula = instrutor.ValorHoraAula,
+                    StatusInstrutor = instrutor.StatusInstrutor,
+                };
+        }
+        else
+        {
+            // Modo de criação
+            viewModel = new InstrutorViewModel
+                {
+                    StatusInstrutor = "Ativo",
+                };
+        }
+    }
+
+    private async Task SalvarInstrutor()
+    {
+        try
+        {
+            salvando = true;
+            var instrutor = new Instrutor
+                {
+                    InstrutorId = viewModel.InstrutorId,
+                    Nome = viewModel.Nome,
+                    CPF = viewModel.CPF,
+                    Email = viewModel.Email,
+                    Telefone = viewModel.Telefone,
+                    FormacaoAcademica = viewModel.FormacaoAcademica,
+                    Especialidade = viewModel.Especialidade,
+                    ValorHoraAula = viewModel.ValorHoraAula,
+                    StatusInstrutor = viewModel.StatusInstrutor
+                };
+
+            if (viewModel.IsEdicao)
+            {
+                await InstrutorService.AlterarAsync(instrutor);
+                Snackbar.Add("Instrutor atualizado com sucesso!", Severity.Success);
+            }
+            else
+            {
+                await InstrutorService.AdicionarAsync(instrutor);
+                Snackbar.Add("Instrutor criado com sucesso!", Severity.Success);
+            }
+
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        catch (ArgumentException ex)
+        {
+            Snackbar.Add($"Erro de validação: {ex.Message}", Severity.Warning);
+        }
+        catch (InvalidOperationException ex)
+        {
+            Snackbar.Add($"Erro: {ex.Message}", Severity.Error);
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Erro interno. Tente novamente. Erro: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            salvando = false;
+        }
+    }
+
+    private async Task OnValidSubmit(EditContext context)
+    {
+        await SalvarInstrutor();
+    }
+
+    void Cancel() => MudDialog.Cancel();
+}
