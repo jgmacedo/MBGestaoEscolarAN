@@ -28,6 +28,7 @@
                     <MudItem xs="12" sm="6">
                         <MudTextField Label="CPF"
                                       @bind-Value="viewModel.CPF"
+                                      Mask="@(new PatternMask("000.000.000-00"))"
                                       For="@(() => viewModel.CPF)"
                                       Required="true"
                                       Immediate="true" />
@@ -44,6 +45,7 @@
                         <MudTextField Label="Telefone"
                                       @bind-Value="viewModel.Telefone"
                                       For="@(() => viewModel.Telefone)"
+                                      Mask="@(new PatternMask("(00) 00000-0000"))"
                                       Immediate="true" />
                     </MudItem>
                     <MudItem xs="12" sm="6">
@@ -76,7 +78,6 @@
                                    Required="true">
                             <MudSelectItem Value=@("Ativo")>Ativo</MudSelectItem>
                             <MudSelectItem Value=@("Inativo")>Inativo</MudSelectItem>
-                            <MudSelectItem Value=@("Afastado")>Afastado</MudSelectItem>
                         </MudSelect>
                     </MudItem>
                 </MudGrid>

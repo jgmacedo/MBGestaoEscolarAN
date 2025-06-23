@@ -88,7 +88,6 @@
                                    For="@(() => viewModel.Modalidade)"
                                    Required="true">
                             <MudSelectItem Value="@("Presencial")">Presencial</MudSelectItem>
-                            <MudSelectItem Value="@("Online")">Online</MudSelectItem>
                             <MudSelectItem Value="@("Híbrido")">Híbrido</MudSelectItem>
                             <MudSelectItem Value="@("EAD")">EAD</MudSelectItem>
                         </MudSelect>
@@ -100,11 +99,10 @@
                                    @bind-Value="viewModel.StatusTurma"
                                    For="@(() => viewModel.StatusTurma)"
                                    Required="true">
-                            <MudSelectItem Value="@("Ativa")">Ativa</MudSelectItem>
-                            <MudSelectItem Value="@("Inativa")">Inativa</MudSelectItem>
-                            <MudSelectItem Value="@("Em Andamento")">Em Andamento</MudSelectItem>
-                            <MudSelectItem Value="@("Finalizada")">Finalizada</MudSelectItem>
                             <MudSelectItem Value="@("Cancelada")">Cancelada</MudSelectItem>
+                            <MudSelectItem Value="@("Concluída")">Concluída</MudSelectItem>
+                            <MudSelectItem Value="@("Inscrições Abertas")">Inscrições Abertas</MudSelectItem>
+                            <MudSelectItem Value="@("Planejada")">Planejada</MudSelectItem>
                         </MudSelect>
                     </MudItem>
                 </MudGrid>
@@ -188,7 +186,7 @@
             // Modo de criação de um novo registro
             viewModel = new TurmaViewModel
             {
-                StatusTurma = "Ativa",
+                StatusTurma = "Concluída",
                 Modalidade = "Presencial",
                 DataInicio = DateTime.Today,
                 DataFim = DateTime.Today.AddMonths(6) // Padrão de 6 meses de duração
