@@ -6,6 +6,7 @@
 @using System.Threading.Channels
 
 @inject ITurmaService TurmaService
+@inject ICursoService CursoService
 @inject IDialogService Dialog
 @inject ISnackbar Snackbar
 
@@ -39,13 +40,37 @@
                     </MudItem>
 
                     <MudItem xs="12" sm="6">
-                        <MudNumericField Label="Curso ID"
-                                         @bind-Value="viewModel.CursoId"
-                                         For="@(() => viewModel.CursoId)"
+                        <MudAutocomplete T="Curso"
+                                         Label="Curso"
+                                         @bind-Value="cursoSelecionado"
+                                         SearchFunc="@BuscarCursos"
+                                         ToStringFunc="@(e => e?.Nome ?? "")"
                                          Required="true"
-                                         Immediate="true"
-                                         Min="1"
-                                         HelperText="ID do curso ao qual a turma pertence" />
+                                         RequiredError="Curso é obrigatório"
+                                         HelperText="Digite para buscar um curso"
+                                         ResetValueOnEmptyText="true"
+                                         CoerceText="false"
+                                         AdornmentIcon="Icons.Material.Filled.Search"
+                                         AdornmentColor="Color.Primary"
+                                         Clearable="true"
+                                         MaxItems="10"
+                                         DebounceInterval="300"
+                                         ShowProgressIndicator="true"
+                                         ProgressIndicatorColor="Color.Primary">
+                            <ItemTemplate Context="curso">
+                                <div class="d-flex flex-column">
+                                    <MudText Typo="Typo.body1">@curso.Nome</MudText>
+                                    <MudText Typo="Typo.caption" Class="mud-text-secondary">
+                                        Código: @curso.Codigo | CH: @curso.CargaHoraria h | @curso.Modalidade
+                                    </MudText>
+                                </div>
+                            </ItemTemplate>
+                            <NoItemsTemplate>
+                                <MudText Align="Align.Center" Class="px-4 py-1">
+                                    Nenhum curso encontrado
+                                </MudText>
+                            </NoItemsTemplate>
+                        </MudAutocomplete>
                     </MudItem>
 
                     <MudItem xs="12" sm="6">
@@ -136,62 +161,104 @@
     bool sucesso = false;
     private TurmaViewModel viewModel = new();
     private bool salvando = false;
+    private List<Curso> cursos = new();
+    private Curso? cursoSelecionado = null;
 
     // Propriedades locais para gerenciar as datas
     private DateTime? dataInicioLocal
     {
-        get => viewModel?.DataInicio; // Converte implicitamente de DateTime para DateTime?
+        get => viewModel?.DataInicio;
         set
         {
-            if (viewModel != null && value.HasValue) // Verifica se o valor não é nulo
+            if (viewModel != null && value.HasValue)
             {
-                viewModel.DataInicio = value.Value; // Converte explicitamente de DateTime? para DateTime
+                viewModel.DataInicio = value.Value;
             }
         }
     }
 
     private DateTime? dataFimLocal
     {
-        get => viewModel?.DataFim; // Converte implicitamente de DateTime para DateTime?
+        get => viewModel?.DataFim;
         set
         {
-            if (viewModel != null && value.HasValue) // Verifica se o valor não é nulo
+            if (viewModel != null && value.HasValue)
             {
-                viewModel.DataFim = value.Value; // Converte explicitamente de DateTime? para DateTime
+                viewModel.DataFim = value.Value;
             }
         }
     }
 
     protected override async Task OnInitializedAsync()
     {
+        // Carrega todos os cursos ativos para uso no autocomplete
+        await CarregarCursos();
+
         if (turma?.TurmaId > 0)
         {
             // Modo de alteração de um registro existente
+            cursoSelecionado = cursos.FirstOrDefault(x => x.CursoId == turma.CursoId);
+
             viewModel = new TurmaViewModel
-            {
-                TurmaId = turma.TurmaId,
-                CursoId = turma.CursoId,
-                Nome = turma.Nome,
-                Codigo = turma.Codigo,
-                DataInicio = turma.DataInicio,
-                DataFim = turma.DataFim,
-                Local = turma.Local,
-                Modalidade = turma.Modalidade,
-                NumeroVagas = turma.NumeroVagas,
-                StatusTurma = turma.StatusTurma
-            };
+                {
+                    TurmaId = turma.TurmaId,
+                    CursoId = turma.CursoId,
+                    NomeCurso = cursoSelecionado?.Nome ?? "",
+                    Nome = turma.Nome,
+                    Codigo = turma.Codigo,
+                    DataInicio = turma.DataInicio,
+                    DataFim = turma.DataFim,
+                    Local = turma.Local,
+                    Modalidade = turma.Modalidade,
+                    NumeroVagas = turma.NumeroVagas,
+                    StatusTurma = turma.StatusTurma
+                };
         }
         else
         {
             // Modo de criação de um novo registro
             viewModel = new TurmaViewModel
-            {
-                StatusTurma = "Concluída",
-                Modalidade = "Presencial",
-                DataInicio = DateTime.Today,
-                DataFim = DateTime.Today.AddMonths(6) // Padrão de 6 meses de duração
-            };
+                {
+                    StatusTurma = "Planejada", // Alterado de "Concluída" para "Planejada" que faz mais sentido para uma turma nova
+                    Modalidade = "Presencial",
+                    DataInicio = DateTime.Today,
+                    DataFim = DateTime.Today.AddMonths(6)
+                };
         }
+    }
+
+    private async Task CarregarCursos()
+    {
+        try
+        {
+            var todosCursos = await CursoService.ListarTodosAsync();
+            // Filtra apenas cursos ativos
+            cursos = todosCursos.Where(c => c.StatusCurso == "Ativo").ToList();
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Erro ao carregar cursos: {ex.Message}", Severity.Error);
+            cursos = new List<Curso>();
+        }
+    }
+
+    private async Task<IEnumerable<Curso>> BuscarCursos(string value, CancellationToken token)
+    {
+        // Se não há valor de busca, retorna uma lista limitada dos primeiros cursos
+        if (string.IsNullOrEmpty(value))
+            return cursos.Take(10);
+
+        // Busca por nome ou código do curso (case insensitive)
+        var resultados = cursos.Where(curso =>
+            curso.Nome.Contains(value, StringComparison.OrdinalIgnoreCase) ||
+            curso.Codigo.Contains(value, StringComparison.OrdinalIgnoreCase) ||
+            (curso.Trilha != null && curso.Trilha.Contains(value, StringComparison.OrdinalIgnoreCase)))
+            .Take(10);
+
+        // Simula um pequeno delay para mostrar o indicador de progresso
+        await Task.Delay(100, token);
+
+        return resultados;
     }
 
     private async Task SalvarTurma()
@@ -200,21 +267,37 @@
         {
             salvando = true;
 
+            // Validação: verifica se um curso foi selecionado
+            if (cursoSelecionado == null || cursoSelecionado.CursoId <= 0)
+            {
+                Snackbar.Add("Por favor, selecione um curso válido.", Severity.Warning);
+                return;
+            }
+
+            // Atualiza o viewModel com o curso selecionado
+            viewModel.CursoId = cursoSelecionado.CursoId;
+            viewModel.NomeCurso = cursoSelecionado.Nome;
+
             // Validação adicional de negócio
+            if (viewModel.DataFim <= viewModel.DataInicio)
+            {
+                Snackbar.Add("A data de fim deve ser posterior à data de início.", Severity.Warning);
+                return;
+            }
 
             var turma = new Turma
-            {
-                TurmaId = viewModel.TurmaId,
-                CursoId = viewModel.CursoId,
-                Nome = viewModel.Nome,
-                Codigo = viewModel.Codigo,
-                DataInicio = viewModel.DataInicio,
-                DataFim = viewModel.DataFim,
-                Local = viewModel.Local,
-                Modalidade = viewModel.Modalidade,
-                NumeroVagas = viewModel.NumeroVagas,
-                StatusTurma = viewModel.StatusTurma
-            };
+                {
+                    TurmaId = viewModel.TurmaId,
+                    CursoId = viewModel.CursoId,
+                    Nome = viewModel.Nome,
+                    Codigo = viewModel.Codigo,
+                    DataInicio = viewModel.DataInicio,
+                    DataFim = viewModel.DataFim,
+                    Local = viewModel.Local,
+                    Modalidade = viewModel.Modalidade,
+                    NumeroVagas = viewModel.NumeroVagas,
+                    StatusTurma = viewModel.StatusTurma
+                };
 
             if (viewModel.IsEdicao)
             {
@@ -254,19 +337,16 @@
         }
         catch (ArgumentException ex)
         {
-            // Erros de validação específicos
             Snackbar.Add($"Erro de validação: {ex.Message}", Severity.Warning);
             sucesso = false;
         }
         catch (InvalidOperationException ex)
         {
-            // Erros de regra de negócio
             Snackbar.Add($"Erro: {ex.Message}", Severity.Error);
             sucesso = false;
         }
         catch (Exception ex)
         {
-            // Outros erros
             Snackbar.Add($"Erro interno. Tente novamente. Erro: {ex.Message}", Severity.Error);
             sucesso = false;
         }

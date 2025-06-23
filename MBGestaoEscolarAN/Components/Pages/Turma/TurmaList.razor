@@ -1,10 +1,11 @@
 ﻿@page "/turma"
+@using MBGestaoEscolarAN.ViewModels
 @using MudBlazor
 @using MBGestaoEscolarAN.Entities
 @using MBGestaoEscolarAN.Services.Interfaces
-@using MBGestaoEscolarAN.Services.Implementations
 
-@inject MBGestaoEscolarAN.Services.Interfaces.ITurmaService TurmaService
+@inject ITurmaService TurmaService
+@inject ICursoService CursoService
 @inject IDialogService DialogService
 @inject ISnackbar Snackbar
 
@@ -16,16 +17,16 @@
                        Variant="Variant.Filled"
                        StartIcon="@Icons.Material.Filled.Add"
                        Disabled="@(_dialogOpen)"
-                       OnClick="() => ShowDialog(string.Empty)">
+                       OnClick="() => ShowDialog(0)">
                 Adicionar Turma
             </MudButton>
         </MudPaper>
-        <MudDataGrid Items="@_turmas" SortMode="SortMode.Multiple" Hover="true">
+        <MudDataGrid T="TurmaViewModel" Items="@_turmas" SortMode="SortMode.Multiple" Hover="true">
             <Columns>
                 <PropertyColumn Property="x => x.TurmaId" Title="ID" />
                 <PropertyColumn Property="x => x.Codigo" Title="Código" />
                 <PropertyColumn Property="x => x.Nome" Title="Nome da Turma" />
-                <PropertyColumn Property="x => x.CursoId" Title="Curso ID" />
+                <PropertyColumn Property="x => x.NomeCurso" Title="Curso" />
                 <PropertyColumn Property="x => x.DataInicio"
                                 Title="Data Início"
                                 Format="dd/MM/yyyy" />
@@ -41,7 +42,7 @@
                         <MudIconButton Color="Color.Primary"
                                        Icon="@Icons.Material.Filled.Edit"
                                        Size="Size.Small"
-                                       OnClick="() => ShowDialog(context.Item.TurmaId.ToString())" />
+                                       OnClick="() => ShowDialog(context.Item.TurmaId)" />
                         <MudIconButton Color="Color.Secondary"
                                        Icon="@Icons.Material.Filled.Delete"
                                        Size="Size.Small"
@@ -50,14 +51,14 @@
                 </TemplateColumn>
             </Columns>
             <PagerContent>
-                <MudDataGridPager T="Turma" />
+                <MudDataGridPager T="TurmaViewModel" />
             </PagerContent>
         </MudDataGrid>
     </MudCardContent>
 </MudCard>
 
 @code {
-    private List<Turma> _turmas = new();
+    private List<TurmaViewModel> _turmas = new();
     private bool _dialogOpen;
     private readonly DialogOptions _dialogOptions = new DialogOptions
         {
@@ -68,9 +69,34 @@
 
     protected override async Task OnInitializedAsync()
     {
+        await CarregarTurmas();
+    }
+
+    private async Task CarregarTurmas()
+    {
         try
         {
-            _turmas = (await TurmaService.ListarTodosAsync()).ToList();
+            var turmas = await TurmaService.ListarTodosAsync();
+            var cursos = (await CursoService.ListarTodosAsync()).ToList();
+
+            _turmas = turmas.Select(turma =>
+            {
+                var curso = cursos.FirstOrDefault(c => c.CursoId == turma.CursoId);
+                return new TurmaViewModel
+                    {
+                        TurmaId = turma.TurmaId,
+                        Codigo = turma.Codigo,
+                        Nome = turma.Nome,
+                        CursoId = turma.CursoId,
+                        NomeCurso = curso?.Nome ?? "",
+                        DataInicio = turma.DataInicio,
+                        DataFim = turma.DataFim,
+                        Local = turma.Local,
+                        Modalidade = turma.Modalidade,
+                        NumeroVagas = turma.NumeroVagas,
+                        StatusTurma = turma.StatusTurma
+                    };
+            }).ToList();
         }
         catch (Exception ex)
         {
@@ -78,19 +104,40 @@
         }
     }
 
-    private async Task ShowDialog(string idTurma)
+    private async Task ShowDialog(int turmaId)
     {
         _dialogOpen = true;
         var parameters = new DialogParameters();
-        if (!string.IsNullOrEmpty(idTurma))
+
+        if (turmaId > 0)
         {
-            var turma = _turmas.FirstOrDefault(x => x.TurmaId.ToString() == idTurma);
-            parameters.Add("Turma", turma);
-            parameters.Add("Title", "Editar Turma");
+            // Modo edição - busca a turma no banco
+            try
+            {
+                var turmaEntity = await TurmaService.ListarPorIdAsync(turmaId);
+                if (turmaEntity != null)
+                {
+                    parameters.Add("turma", turmaEntity);
+                    parameters.Add("Title", "Editar Turma");
+                }
+                else
+                {
+                    Snackbar.Add("Turma não encontrada.", Severity.Error);
+                    _dialogOpen = false;
+                    return;
+                }
+            }
+            catch (Exception ex)
+            {
+                Snackbar.Add($"Erro ao carregar turma: {ex.Message}", Severity.Error);
+                _dialogOpen = false;
+                return;
+            }
         }
         else
         {
-            parameters.Add("Turma", new Turma());
+            // Modo criação - passa uma turma vazia
+            parameters.Add("turma", new Turma());
             parameters.Add("Title", "Nova Turma");
         }
 
@@ -105,13 +152,12 @@
         _dialogOpen = false;
         if (!result.Canceled)
         {
-            // recarregar lista
-            _turmas = (await TurmaService.ListarTodosAsync()).ToList();
+            await CarregarTurmas();
             StateHasChanged();
         }
     }
 
-    private async Task ConfirmaExclusaoTurma(Turma turma)
+    private async Task ConfirmaExclusaoTurma(TurmaViewModel turma)
     {
         var confirmed = await DialogService.ShowMessageBox(
             "Confirmação de Exclusão",
@@ -122,16 +168,23 @@
 
         if (confirmed == true)
         {
-            var sucesso = await TurmaService.ExcluirAsync(turma.TurmaId);
-            if (sucesso)
+            try
             {
-                _turmas = (await TurmaService.ListarTodosAsync()).ToList();
-                Snackbar.Add($"Turma '{turma.Nome}' removida com sucesso.", Severity.Success);
-                StateHasChanged();
+                var sucesso = await TurmaService.ExcluirAsync(turma.TurmaId);
+                if (sucesso)
+                {
+                    await CarregarTurmas();
+                    Snackbar.Add($"Turma '{turma.Nome}' removida com sucesso.", Severity.Success);
+                    StateHasChanged();
+                }
+                else
+                {
+                    Snackbar.Add($"Erro ao excluir a turma '{turma.Nome}'.", Severity.Error);
+                }
             }
-            else
+            catch (Exception ex)
             {
-                Snackbar.Add($"Erro ao excluir a turma '{turma.Nome}'.", Severity.Error);
+                Snackbar.Add($"Erro ao excluir turma: {ex.Message}", Severity.Error);
             }
         }
     }

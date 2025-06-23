@@ -10,6 +10,8 @@ namespace MBGestaoEscolarAN.ViewModels
         [Display(Name = "Curso")]
         public int CursoId { get; set; }
 
+        public string NomeCurso { get; set; } = "";
+
         [Required(ErrorMessage = "O nome da turma é obrigatório")]
         [StringLength(150, ErrorMessage = "O nome deve ter no máximo 150 caracteres")]
         [Display(Name = "Nome da Turma")]

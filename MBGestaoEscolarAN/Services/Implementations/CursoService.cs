@@ -16,12 +16,12 @@ namespace MBGestaoEscolarAN.Services.Implementations
 
         public async Task<int> AdicionarAsync(Curso curso)
         {
-            var cursoExiste = await _context.Cursos.FindAsync(curso.Nome);
+            var cursoExiste = await _context.Cursos.FirstOrDefaultAsync(x => x.Nome == curso.Nome);
             if (cursoExiste == null)
             {
                 _context.Cursos.Add(curso);
                 await _context.SaveChangesAsync();
-                return curso.CursoID;
+                return curso.CursoId;
             }
             else
             {
@@ -31,7 +31,7 @@ namespace MBGestaoEscolarAN.Services.Implementations
 
         public async Task<bool> AlterarAsync(Curso curso)
         {
-            var cursoExiste = await _context.Cursos.FindAsync(curso.CursoID);
+            var cursoExiste = await _context.Cursos.FindAsync(curso.CursoId);
             if (cursoExiste == null)
             {
                 return false;
@@ -54,7 +54,7 @@ namespace MBGestaoEscolarAN.Services.Implementations
         public async Task<Curso?> ListarPorIdAsync(int id)
         {
             return await _context.Cursos
-                                    .AsNoTracking().FirstOrDefaultAsync(x => x.CursoID == id);
+                                    .AsNoTracking().FirstOrDefaultAsync(x => x.CursoId == id);
         }
 
         public async Task<IEnumerable<Curso>> ListarTodosAsync()

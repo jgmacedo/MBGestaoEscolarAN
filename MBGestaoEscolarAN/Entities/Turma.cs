@@ -1,19 +1,48 @@
-﻿using System.ComponentModel.DataAnnotations.Schema;
+﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+
 
 namespace MBGestaoEscolarAN.Entities
 {
-    [Table("Turma")] // <--- Add this line
+    [Table("Turma")]
     public class Turma
     {
-        public int TurmaId {  get; set; }
+        [Key]
+        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        public int TurmaId { get; set; }
+
+        [Required]
+        [ForeignKey("Curso")]
         public int CursoId { get; set; }
-        public string Nome {  get; set; }
-        public string Codigo {  get; set; }
+
+        [Required]
+        [StringLength(150)]
+        public string Nome { get; set; } = string.Empty;
+
+        [Required]
+        [StringLength(50)]
+        public string Codigo { get; set; } = string.Empty;
+
+        [Required]
+        [DataType(DataType.Date)]
         public DateTime DataInicio { get; set; }
+
+        [Required]
+        [DataType(DataType.Date)]
         public DateTime DataFim { get; set; }
-        public string Local {  get; set; }
-        public string Modalidade {  get; set; }
-        public Int32 NumeroVagas {  get; set; }
-        public string StatusTurma {  get; set; }
+
+        [StringLength(150)]
+        public string? Local { get; set; }
+
+        [Required]
+        [StringLength(50)]
+        public string Modalidade { get; set; } = "Presencial";
+
+        [Required]
+        public int NumeroVagas { get; set; }
+
+        [Required]
+        [StringLength(30)]
+        public string StatusTurma { get; set; } = "Planejada";
     }
 }
